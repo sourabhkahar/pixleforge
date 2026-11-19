@@ -58,19 +58,16 @@ class Generation extends Model
     }
 
     /**
-     * Our stored copy if we have it, otherwise Pixelforge's signed URL while it is valid.
+     * Permanent application URL that securely serves/redirects to the Pixelforge image,
+     * refreshing expired signed URLs automatically.
      */
     public function displayImageUrl(): ?string
     {
-        if ($this->image_path) {
-            return Storage::disk('public')->url($this->image_path);
+        if ($this->status !== GenerationStatus::Succeeded) {
+            return null;
         }
 
-        if ($this->image_url && ! $this->imageExpired()) {
-            return $this->image_url;
-        }
-
-        return null;
+        return route('generations.view', $this);
     }
 
     public function imageExpired(): bool

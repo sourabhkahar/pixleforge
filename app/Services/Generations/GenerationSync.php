@@ -75,9 +75,10 @@ class GenerationSync
 
         $generation->refresh();
 
-        if ($changed && $generation->status === GenerationStatus::Succeeded && $generation->image_url && ! $generation->image_path) {
-            StoreGenerationImage::dispatch($generation->id)->afterCommit();
-        }
+        // Download to local storage is disabled to rely on Pixelforge's signed URLs directly.
+        // if ($changed && $generation->status === GenerationStatus::Succeeded && $generation->image_url && ! $generation->image_path) {
+        //     StoreGenerationImage::dispatch($generation->id)->afterCommit();
+        // }
 
         return $changed;
     }

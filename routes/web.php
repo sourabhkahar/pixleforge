@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:20,1')
         ->name('generations.store');
     Route::get('/generations/status', [GenerationController::class, 'status'])->name('generations.status');
+    Route::get('/generations/{generation}/view', [GenerationController::class, 'viewImage'])->name('generations.view');
 
     Route::get('/usage', [UsageController::class, 'index'])->name('usage.index');
     Route::post('/credits/purchase', [CreditsController::class, 'purchase'])

@@ -6,12 +6,14 @@ use App\Actions\StartGeneration;
 use App\Http\Requests\StoreGenerationRequest;
 use App\Models\Generation;
 use App\Services\Credits\InsufficientCreditsException;
+use App\Services\Pixelforge\PixelforgeClient;
 use App\Services\Pricing\CostCalculator;
 use App\Services\Pricing\PricingCatalog;
 use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -114,5 +116,33 @@ class GenerationController extends Controller
             'balance' => Money::format($balance),
             'balance_nanos' => $balance,
         ]);
+    }
+
+    /**
+     * Stream or redirect to the generation image, refreshing the signed URL on the fly if expired.
+     */
+    public function viewImage(Request $request, Generation $generation, PixelforgeClient $pixelforge): RedirectResponse
+    {
+        abort_if($generation->user_id !== $request->user()->id, 403);
+
+        if (! $generation->image_url || $generation->imageExpired()) {
+            if ($generation->provider_id) {
+                $remote = $pixelforge->getGeneration($generation->provider_id);
+                if (! empty($remote['image_url'])) {
+                    $generation->update([
+                        'image_url' => $remote['image_url'],
+                        'image_url_expires_at' => isset($remote['image_url_expires_at'])
+                            ? Carbon::parse($remote['image_url_expires_at'])
+                            : now()->addHours(24),
+                    ]);
+                }
+            }
+        }
+
+        if (! $generation->image_url) {
+            abort(404, 'Image not available.');
+        }
+
+        return redirect()->away($generation->image_url);
     }
 }
